@@ -1,0 +1,10 @@
+{
+    "ArrowDown": [32, 0],
+    "ArrowDown_alt": [32, 64],
+    "ArrowUp": [128, 96],
+    "ArrowUp_alt": [128, 160],
+    "ArrowLeft": [192, 224],
+    "ArrowLeft_alt": [192, 224],
+    "ArrowRight": [256, 288],
+    "ArrowRight_alt": [256, 288]
+}
