@@ -1,5 +1,5 @@
 # glitch-city
-v1.0.1 - work in progress
+v1.0.2 - work in progress
 -
 https://auer404.github.io/glitch-city/
 
