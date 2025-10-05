@@ -212,5 +212,6 @@ sim_btn.onclick = function() {
 }
 let sh_btn = document.querySelector("#share");
 sh_btn.onclick = function() {
+    output("Processing...");
     output(GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], 8));
 }

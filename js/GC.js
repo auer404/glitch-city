@@ -4,7 +4,7 @@ TODO :
 
 • tileset_parser :
 
-    - share_patterns(a, b, pattern_size) -> amount
+    - share_patterns() : DEBUG
 
     - reduced_definition(pixel_arr , def_division) ?
         ("same but offsetted" scenario, similarity check -> false negative)

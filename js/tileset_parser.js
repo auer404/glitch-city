@@ -223,8 +223,64 @@ GC.tileset_parser = {
         let pixels_a_2d = GC.tools.array_2d(tile_a.pixels);
         let pixels_b_2d = GC.tools.array_2d(tile_b.pixels);
 
-        // SCAN : GC.tools.array_fragment(arr, w, h, offset_x, offset_y)
+        let patterns_a = [];
+        let patterns_b = [];
 
+        // TMP
+        let step = 1; // 1 = all possible patterns / definition = grid
+        //
+
+        for (let y = 0; y < GC.options.tile_size / definition; y += step) {
+            for (let x = 0; x < GC.options.tile_size / definition; x += step) {
+                patterns_a.push(GC.tools.array_2d_flatten(
+                    GC.tools.array_fragment(
+                    pixels_a_2d ,
+                    definition, definition,
+                    x, y
+                )));
+                patterns_b.push(GC.tools.array_2d_flatten(
+                    GC.tools.array_fragment(
+                    pixels_b_2d ,
+                    definition, definition,
+                    x, y
+                )));
+            }
+        }
+        //console.log(patterns_a, patterns_b);
+        let amount = 0;
+        console.clear();
+        for (let a_i = 0; a_i < patterns_a.length; a_i++) {
+            for (let b_i = 0; b_i < patterns_b.length; b_i++) {
+                let tested_a = patterns_a[a_i];
+                let tested_b = patterns_b[b_i]; // [a_i] for "in place" mode
+                console.log("--- Comparing",a_i,b_i);
+                console.groupCollapsed();
+                let same = true;
+                for (let pixel_i = 0; pixel_i < tested_a.length; pixel_i++) {
+                    console.log(tested_a[pixel_i].r,tested_b[pixel_i].r);
+                    console.log(tested_a[pixel_i].g,tested_b[pixel_i].g);
+                    console.log(tested_a[pixel_i].b,tested_b[pixel_i].b);
+                    let same_r = tested_a[pixel_i].r == tested_b[pixel_i].r;
+                    let same_g = tested_a[pixel_i].g == tested_b[pixel_i].g;
+                    let same_b = tested_a[pixel_i].b == tested_b[pixel_i].b;
+                    if (!same_r || !same_g || !same_b) {
+                        same = false;
+                    } else {
+                        console.log("is same");
+                    }
+                    console.log("Flag:",same);
+                }
+                console.groupEnd();
+                if (same) {
+                    amount++;
+                    console.log("shared pattern found");
+                } else {
+                    console.log("not same");
+                }
+            }
+        }
+        console.log("FINAL AMOUNT", amount);
+        return amount;
     },
 
     tile_by_id: function (sorted_index) {
@@ -264,6 +320,17 @@ GC.tools.array_2d = function (arr) {
         }
     }
     return formatted;
+}
+
+GC.tools.array_2d_flatten = function (arr) {
+    let flattened = [];
+
+    for (let y = 0; y < arr.length; y++) {
+        for (let x = 0; x < arr[y].length; x++) {
+            flattened.push(arr[y][x]);
+        }
+    }
+    return flattened;
 }
 
 GC.tools.array_flip = function (arr, axis) {
