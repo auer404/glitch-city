@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glitch City - TSM Editor</title>
+
+    <script src="js/GC.js" defer></script>
+    <script src="js/tileset_parser.js" defer></script>
+
+    <script src="js/EXTRA-tsm-editor-main.js" defer></script>
+
+    <style>
+    body{
+        margin:0;
+        overflow-x:hidden;
+        display:flex;
+        font-family: sans-serif;
+    }
+
+    canvas {
+        width:66.66%;
+    }
+
+    #ui-offset {
+        width:33.33%;
+    }
+
+    #ui {
+        position:fixed; left:0; top:0;
+        width:33.33%; min-height:100%;
+        box-sizing:border-box;
+        padding:10px;
+    }
+
+    #ui-canvas {
+        position:absolute; top:0; right:0; width:66.66%;
+        opacity:0.5;
+    }
+
+    </style>
+</head>
+
+<body>
+
+    <div id="ui">
+       <p>Function tests :</p>
+       <p><button id="same_pixels" disabled>same_pixels ?</button></p>
+       <p><button id="same_pixels_flipped" disabled>same_pixels_flipped ?</button></p>
+       <p><button id="same_pixels_rotated" disabled>same_pixels_rotated ?</button></p>
+       <p><button id="similarity" disabled>similarity</button></p>
+       <p><button id="share" disabled>share_patterns</button></p>
+
+       <p id="output"></p>
+    </div>
+
+    <div id="ui-offset"></div>
+
+    <canvas id="main-canvas"></canvas>
+
+    <canvas id="ui-canvas"></canvas>
+
+</body>
+
+</html>
