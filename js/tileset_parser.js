@@ -218,7 +218,7 @@ GC.tileset_parser = {
         return similar_found / tile_a.pixels.length;
     },
 
-    share_patterns: function (tile_a, tile_b, definition) {
+    share_patterns: function (tile_a, tile_b, definition = GC.options.tile_size / 4, strict_position = false) {
 
         let pixels_a_2d = GC.tools.array_2d(tile_a.pixels);
         let pixels_b_2d = GC.tools.array_2d(tile_b.pixels);
@@ -226,61 +226,114 @@ GC.tileset_parser = {
         let patterns_a = [];
         let patterns_b = [];
 
-        // TMP
-        let step = 1; // 1 = all possible patterns / definition = grid
-        //
+        for (let y = 0; y <= GC.options.tile_size - definition; y += definition) {
+            for (let x = 0; x <= GC.options.tile_size - definition; x += definition) {
 
-        for (let y = 0; y < GC.options.tile_size / definition; y += step) {
-            for (let x = 0; x < GC.options.tile_size / definition; x += step) {
-                patterns_a.push(GC.tools.array_2d_flatten(
+                let is_distinct_a = true;
+                let new_pattern_a = GC.tools.array_2d_flatten(
                     GC.tools.array_fragment(
                     pixels_a_2d ,
                     definition, definition,
                     x, y
-                )));
-                patterns_b.push(GC.tools.array_2d_flatten(
+                ));
+
+                let is_distinct_b = true;
+                let new_pattern_b = GC.tools.array_2d_flatten(
                     GC.tools.array_fragment(
                     pixels_b_2d ,
                     definition, definition,
                     x, y
-                )));
+                ));
+
+                if (!strict_position) {
+
+                    let a_already_exists = false;
+
+                    for (let a_stored of patterns_a) {
+                        let a_same = true;
+                        for (let i = 0; i < new_pattern_a.length; i++) {
+                            let same_r = a_stored[i].r == new_pattern_a[i].r;
+                            let same_g = a_stored[i].g == new_pattern_a[i].g;
+                            let same_b = a_stored[i].b == new_pattern_a[i].b;
+                            if (!same_r || !same_g || !same_b) {
+                                a_same = false;
+                            }
+                        }
+                        if (a_same) {
+                            a_already_exists = true;
+                        }
+                    }
+                    is_distinct_a = !a_already_exists;
+
+
+                    let b_already_exists = false;
+
+                    for (let b_stored of patterns_b) {
+                        let b_same = true;
+                        for (let i = 0; i < new_pattern_b.length; i++) {
+                            let same_r = b_stored[i].r == new_pattern_b[i].r;
+                            let same_g = b_stored[i].g == new_pattern_b[i].g;
+                            let same_b = b_stored[i].b == new_pattern_b[i].b;
+                            if (!same_r || !same_g || !same_b) {
+                                b_same = false;
+                            }
+                        }
+                        if (b_same) {
+                            b_already_exists = true;
+                        }
+                    }
+                    is_distinct_b = !b_already_exists;
+                }
+
+                if (is_distinct_a || patterns_a.length == 0) {
+                    patterns_a.push(new_pattern_a);
+                }
+                if (is_distinct_b || patterns_b.length == 0) {
+                    patterns_b.push(new_pattern_b);
+                }
             }
         }
-        //console.log(patterns_a, patterns_b);
+
         let amount = 0;
-        console.clear();
         for (let a_i = 0; a_i < patterns_a.length; a_i++) {
-            for (let b_i = 0; b_i < patterns_b.length; b_i++) {
+
+            let comparison_depth = patterns_b.length;
+            if (strict_position) {
+                comparison_depth = 1;
+            }
+
+            for (let b_i = 0; b_i < comparison_depth; b_i++) {
+
                 let tested_a = patterns_a[a_i];
-                let tested_b = patterns_b[b_i]; // [a_i] for "in place" mode
-                console.log("--- Comparing",a_i,b_i);
-                console.groupCollapsed();
+                let tested_b = patterns_b[b_i]; 
+                if (strict_position) {
+                    tested_b = patterns_b[a_i]; 
+                }
+
                 let same = true;
                 for (let pixel_i = 0; pixel_i < tested_a.length; pixel_i++) {
-                    console.log(tested_a[pixel_i].r,tested_b[pixel_i].r);
-                    console.log(tested_a[pixel_i].g,tested_b[pixel_i].g);
-                    console.log(tested_a[pixel_i].b,tested_b[pixel_i].b);
                     let same_r = tested_a[pixel_i].r == tested_b[pixel_i].r;
                     let same_g = tested_a[pixel_i].g == tested_b[pixel_i].g;
                     let same_b = tested_a[pixel_i].b == tested_b[pixel_i].b;
                     if (!same_r || !same_g || !same_b) {
                         same = false;
-                    } else {
-                        console.log("is same");
                     }
-                    console.log("Flag:",same);
                 }
-                console.groupEnd();
+
                 if (same) {
                     amount++;
-                    console.log("shared pattern found");
-                } else {
-                    console.log("not same");
                 }
             }
         }
-        console.log("FINAL AMOUNT", amount);
-        return amount;
+
+        let max = patterns_a.length;
+        if (!strict_position) {
+            max = (patterns_a.length + patterns_b.length) / 2;
+        }
+
+        let ratio = amount / max;
+
+        return ratio;
     },
 
     tile_by_id: function (sorted_index) {

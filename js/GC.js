@@ -4,14 +4,15 @@ TODO :
 
 • tileset_parser :
 
-    - share_patterns() : DEBUG
-
     - reduced_definition(pixel_arr , def_division) ?
         ("same but offsetted" scenario, similarity check -> false negative)
+
+    - flip + similarity ?
 
     - same_pixels_flipped() : APPLY
     - similarity() : APPLY
     - same_pixels_rotated() : APPLY
+    - shared_pattern() : APPLY
 
     - Optimization : array_2d : pre-apply once ?
     - Optimization : tools.flip/rotate/fragment/other - secure + unbind from tile_size / square scenario

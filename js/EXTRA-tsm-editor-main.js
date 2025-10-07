@@ -40,6 +40,8 @@ tile : {
 let drawn_tiles = [];
 let drawn_tiles_xy = [];
 
+let tile_gap = 1;
+
 const canvas = document.querySelector("#main-canvas");
 canvas.ctx = canvas.getContext("2d");
 
@@ -51,16 +53,16 @@ window.onresize = draw_sorted_tileset;
 
 function draw_sorted_tileset() {
 
-    let disp_cols = Math.floor(window.innerWidth * 2 / 3 / (GC.options.tile_size + 1));
+    let disp_cols = Math.floor(window.innerWidth * 2 / 3 / (GC.options.tile_size + tile_gap));
     let disp_rows = Math.ceil(GC.tileset_map.tiles.length / disp_cols);
 
-    canvas.width = disp_cols * (GC.options.tile_size + 1);
-    canvas.height = disp_rows * (GC.options.tile_size + 1);
+    canvas.width = disp_cols * (GC.options.tile_size + tile_gap);
+    canvas.height = disp_rows * (GC.options.tile_size + tile_gap);
 
     ui_canvas.width = canvas.width;
     ui_canvas.height = canvas.height;
 
-    canvas.ctx.fillStyle = "#ffff00ff";
+    canvas.ctx.fillStyle = "#ffff6fff";
     canvas.ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     let tile_id = 0;
@@ -75,8 +77,8 @@ function draw_sorted_tileset() {
                     GC.tileset_parser.tileset_src,
                     tile.src_x, tile.src_y,
                     GC.options.src_tile_size, GC.options.src_tile_size,
-                    x * (GC.options.tile_size + 1),
-                    y * (GC.options.tile_size + 1),
+                    x * (GC.options.tile_size + tile_gap),
+                    y * (GC.options.tile_size + tile_gap),
                     GC.options.tile_size, GC.options.tile_size
                 );
 
@@ -101,11 +103,33 @@ function draw_sorted_tileset() {
 
 function draw_ui_canvas() {
     ui_canvas.ctx.clearRect(0, 0, ui_canvas.width, ui_canvas.height);
-    ui_canvas.ctx.fillStyle = "#ffff00ff";
+    ui_canvas.ctx.fillStyle = "#baff70ff";
 
     for (let tile of selected_tiles) {
         let ui_tile = drawn_tiles[tile.ui_index];
-        ui_canvas.ctx.fillRect(ui_tile.x * (GC.options.tile_size + 1), ui_tile.y * (GC.options.tile_size + 1), GC.options.tile_size, GC.options.tile_size);
+        ui_canvas.ctx.fillRect(ui_tile.x * (GC.options.tile_size + tile_gap), ui_tile.y * (GC.options.tile_size + tile_gap), GC.options.tile_size, GC.options.tile_size);
+    }
+}
+
+let tile_details = document.querySelector("#tile_details");
+
+function draw_selected_tiles_detail() {
+    tile_details.innerHTML = "";
+    if (selected_tiles.length > 0) {
+        tile_details.innerHTML = "<h2>Selected :</h2>";
+    }
+    for (let tile of selected_tiles) {
+        let ui_tile = drawn_tiles[tile.ui_index];
+        let d_canvas = document.createElement("canvas");
+        tile_details.appendChild(d_canvas);
+        d_canvas.width = 96; d_canvas.height = 96;
+        d_canvas.getContext("2d").drawImage(
+            GC.tileset_parser.tileset_src,
+                    tile.src_x, tile.src_y,
+                    GC.options.src_tile_size, GC.options.src_tile_size,
+                    0, 0,
+                    96, 96
+                );
     }
 }
 
@@ -115,17 +139,31 @@ function get_ui_tile(x,y) {
 
 /********* UI : INTERACTIONS **********/
 
+GC.events.add("optionsFetched", function(){
+    document.querySelector("#gap_modifier").setAttribute("max", GC.options.tile_size);
+});
+
+document.querySelector("#gap_modifier").value = tile_gap;
+
+document.querySelector("#gap_modifier").oninput = function(){
+    tile_gap = this.value * 1;
+    console.log("Tile gap :",tile_gap);
+    draw_sorted_tileset();
+}
+
 let hovered_tile_coords = false;
 let selected_tiles = [];
 
 ui_canvas.onmousemove = function(e) {
+ 
     let mouse_coords = {
         x:e.x - ui_canvas.offsetLeft,
         y:e.y - ui_canvas.offsetTop + window.scrollY
     }
+
     hovered_tile_coords = {
-        x:Math.max(0,Math.floor(mouse_coords.x / (GC.options.tile_size + 1))),
-        y:Math.max(0,Math.floor(mouse_coords.y / (GC.options.tile_size + 1))),
+        x:Math.max(0,Math.floor(mouse_coords.x / (GC.options.tile_size + tile_gap))),
+        y:Math.max(0,Math.floor(mouse_coords.y / (GC.options.tile_size + tile_gap)))
     }
 }
 
@@ -157,6 +195,7 @@ ui_canvas.onclick = function() {
     }
     onSelectionUpdate();
     draw_ui_canvas();
+    draw_selected_tiles_detail();
 }
 
 let shift_pressed = false;
@@ -180,13 +219,17 @@ function onSelectionUpdate() {
         spf_btn.removeAttribute("disabled");
         spr_btn.removeAttribute("disabled");
         sim_btn.removeAttribute("disabled");
+        shs_btn.removeAttribute("disabled");
         sh_btn.removeAttribute("disabled");
+        sha_btn.removeAttribute("disabled");
     } else {
         sp_btn.setAttribute("disabled",true);
         spf_btn.setAttribute("disabled",true);
         spr_btn.setAttribute("disabled",true);
         sim_btn.setAttribute("disabled",true);
+        shs_btn.setAttribute("disabled",true);
         sh_btn.setAttribute("disabled",true);
+        sha_btn.setAttribute("disabled",true);
     }
 }
 
@@ -210,8 +253,18 @@ let sim_btn = document.querySelector("#similarity");
 sim_btn.onclick = function() {
     output(GC.tileset_parser.similarity(selected_tiles[0], selected_tiles[1]));
 }
+let shs_btn = document.querySelector("#share_strict");
+shs_btn.onclick = function() {
+    output(GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], 8, true));
+}
 let sh_btn = document.querySelector("#share");
 sh_btn.onclick = function() {
-    output("Processing...");
-    output(GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], 8));
+    output(GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1]));
+}
+let sha_btn = document.querySelector("#share_avg");
+sha_btn.onclick = function() {
+    let shared_strict = GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], 8, true);
+    let shared_distinct = GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1]);
+    console.log("Average shared :",shared_distinct,shared_strict);
+    output((shared_distinct + shared_strict) / 2);
 }
