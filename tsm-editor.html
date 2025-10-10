@@ -12,52 +12,56 @@
     <script src="js/EXTRA-tsm-editor-main.js" defer></script>
 
     <style>
-    body{
-        margin:0;
-        overflow-x:hidden;
-        font-family: sans-serif;
-    }
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            font-family: sans-serif;
+        }
 
-    #main-canvas {
-        position:absolute; top:0; right:0;
-    }
+        #main-canvas {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
 
-    #ui {
-        position:fixed; left:0; top:0;
-        width:33.33%; min-height:100%;
-        box-sizing:border-box;
-        padding:10px;
-    }
+        #ui {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 33.33%;
+            height: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            overflow: auto;
+        }
 
-    #tile_details {
-        display:flex;
-        /* flex-direction:column; */
-        flex-wrap:wrap;
-        justify-content:center;
-        /* align-items:center; */
-        gap:10px;
-    }
+        #tile_details {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
 
-    #tile_details h2 {
-        width:100%;
-    }
+        #tile_details h2 {
+            width: 100%;
+        }
 
-    #tile_details canvas {
-        width:96px; height:96px;
-        border:1px solid black;
-    }
+        #tile_details canvas {
+            width: 96px;
+            height: 96px;
+            border: 1px solid black;
+        }
 
-    #tile_details:not(:empty) {
-        margin-bottom:2em;
-    }
+        #tile_details:not(:empty) {
+            margin-bottom: 2em;
+        }
 
-    #ui-canvas {
-        position:absolute;
-        top:0;
-        right:0;
-        opacity:0.5;
-    }
-
+        #ui-canvas {
+            position: absolute;
+            top: 0;
+            right: 0;
+            opacity: 0.5;
+        }
     </style>
 </head>
 
@@ -67,16 +71,25 @@
         <p>Gap : <input id="gap_modifier" min="0" type="range"></p>
 
         <div id="tile_details"></div>
-       <h3>Function tests :</h3>
-       <p><button id="same_pixels" disabled>same_pixels ?</button></p>
-       <p><button id="same_pixels_flipped" disabled>same_pixels_flipped ?</button></p>
-       <p><button id="same_pixels_rotated" disabled>same_pixels_rotated ?</button></p>
-       <p><button id="similarity" disabled>similarity</button></p>
-       <p><button id="share_strict" disabled>shared_patterns (strict)</button></p>
-       <p><button id="share" disabled>shared_patterns</button></p>
-       <p><button id="share_avg" disabled>shared_patterns (average)</button></p>
+        <h3>Function tests :</h3>
+        <p id="output"></p>
+        <p><button class="compare_two" id="same_pixels" disabled>same_pixels ?</button></p>
+        <p><button class="compare_two" id="same_pixels_flipped" disabled>same_pixels flipped ?</button></p>
+        <p><button class="compare_two" id="same_pixels_rotated" disabled>same_pixels rotated ?</button></p>
+        <hr>
+        <p><button class="compare_two" id="similarity" disabled>similarity</button></p>
+        <p><button class="compare_two" id="similarity_f" disabled>similarity flipped</button></p>
+        <p><button class="compare_two" id="similarity_r" disabled>similarity rotated</button></p>
+        <p><button class="compare_two" id="similarity_l" disabled>similarity localized</button></p>
+        <hr>
+        <p><button class="compare_two" id="share_strict" disabled>shared_patterns (strict)</button></p>
+        <p><button class="compare_two" id="share" disabled>shared_patterns</button></p>
+        <p><button class="compare_two" id="share_blur_strict" disabled>shared_patterns (blur strict)</button></p>
+        <p><button class="compare_two" id="share_blur" disabled>shared_patterns (blur)</button></p>
+        <p><button class="compare_two" id="share_flip" disabled>shared_patterns flipped</button></p>
+        <p><button class="compare_two" id="share_rotate" disabled>shared_patterns rotated</button></p>
+        <p><button class="compare_two" id="share_loc" disabled>shared_patterns localized</button></p>
 
-       <p id="output"></p>
     </div>
 
     <canvas id="main-canvas"></canvas>

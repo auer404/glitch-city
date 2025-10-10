@@ -213,58 +213,109 @@ window.addEventListener("keyup",function(e){
 });
 
 function onSelectionUpdate() {
-
-    if (selected_tiles.length == 2) {
-        sp_btn.removeAttribute("disabled");
-        spf_btn.removeAttribute("disabled");
-        spr_btn.removeAttribute("disabled");
-        sim_btn.removeAttribute("disabled");
-        shs_btn.removeAttribute("disabled");
-        sh_btn.removeAttribute("disabled");
-        sha_btn.removeAttribute("disabled");
-    } else {
-        sp_btn.setAttribute("disabled",true);
-        spf_btn.setAttribute("disabled",true);
-        spr_btn.setAttribute("disabled",true);
-        sim_btn.setAttribute("disabled",true);
-        shs_btn.setAttribute("disabled",true);
-        sh_btn.setAttribute("disabled",true);
-        sha_btn.setAttribute("disabled",true);
+    for (let btn of document.querySelectorAll(".compare_two")) {
+        if (selected_tiles.length == 2) {
+            btn.removeAttribute("disabled");
+        } else {
+            btn.setAttribute("disabled",true);
+        }
     }
 }
 
 function output(msg) {
-    document.querySelector("#output").textContent = msg;
+    document.querySelector("#output").innerHTML = msg;
 }
+
+/******** BUTTON HANDLERS *********/
 
 let sp_btn = document.querySelector("#same_pixels");
 sp_btn.onclick = function() {
     output(GC.tileset_parser.same_pixels(selected_tiles[0], selected_tiles[1]));
 }
+
 let spf_btn = document.querySelector("#same_pixels_flipped");
 spf_btn.onclick = function() {
-    output(JSON.stringify(GC.tileset_parser.same_pixels_flipped(selected_tiles[0], selected_tiles[1], true)));
+    let new_v = JSON.stringify(GC.tileset_parser.same_pixels(selected_tiles[0], selected_tiles[1], {flip:"x"}));
+    new_v += " / " + JSON.stringify(GC.tileset_parser.same_pixels(selected_tiles[0], selected_tiles[1], {flip:"y"}));
+    output(new_v);
 }
+
 let spr_btn = document.querySelector("#same_pixels_rotated");
 spr_btn.onclick = function() {
-    output(GC.tileset_parser.same_pixels_rotated(selected_tiles[0], selected_tiles[1], true));
+    let new_v = JSON.stringify(GC.tileset_parser.same_pixels(selected_tiles[0], selected_tiles[1], {rotate:1}));
+    new_v += " / " + JSON.stringify(GC.tileset_parser.same_pixels(selected_tiles[0], selected_tiles[1], {rotate:2}));
+    new_v += " / " + JSON.stringify(GC.tileset_parser.same_pixels(selected_tiles[0], selected_tiles[1], {rotate:3}));
+    output(new_v);
 }
+
 let sim_btn = document.querySelector("#similarity");
 sim_btn.onclick = function() {
     output(GC.tileset_parser.similarity(selected_tiles[0], selected_tiles[1]));
 }
+let sim_btn_f = document.querySelector("#similarity_f");
+sim_btn_f.onclick = function() {
+    let msg = GC.tileset_parser.similarity(selected_tiles[0], selected_tiles[1], {flip:"x"});
+    msg += " / " + GC.tileset_parser.similarity(selected_tiles[0], selected_tiles[1], {flip:"y"});
+    output (msg);
+}
+
+let sim_btn_r = document.querySelector("#similarity_r");
+sim_btn_r.onclick = function() {
+   let msg = GC.tileset_parser.similarity(selected_tiles[0], selected_tiles[1], {rotate:1});
+    msg += " / " + GC.tileset_parser.similarity(selected_tiles[0], selected_tiles[1], {rotate:2});
+    msg += " / " + GC.tileset_parser.similarity(selected_tiles[0], selected_tiles[1], {rotate:3});
+    output (msg);
+}
+
+let sim_btn_l = document.querySelector("#similarity_l");
+sim_btn_l.onclick = function() {
+   let msg = "top half : " + GC.tileset_parser.similarity(selected_tiles[0], selected_tiles[1], {y_end:15});
+    msg += "<br>bottom half : " + GC.tileset_parser.similarity(selected_tiles[0], selected_tiles[1], {y_start:16});
+    msg += "<br>left half : " + GC.tileset_parser.similarity(selected_tiles[0], selected_tiles[1], {x_end:15});
+    msg += "<br>right half :" + GC.tileset_parser.similarity(selected_tiles[0], selected_tiles[1], {x_start:16});
+    output (msg);
+}
+
 let shs_btn = document.querySelector("#share_strict");
 shs_btn.onclick = function() {
-    output(GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], 8, true));
-}
-let sh_btn = document.querySelector("#share");
-sh_btn.onclick = function() {
     output(GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1]));
 }
-let sha_btn = document.querySelector("#share_avg");
-sha_btn.onclick = function() {
-    let shared_strict = GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], 8, true);
-    let shared_distinct = GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1]);
-    console.log("Average shared :",shared_distinct,shared_strict);
-    output((shared_distinct + shared_strict) / 2);
+
+let sh_btn = document.querySelector("#share");
+sh_btn.onclick = function() {
+    output(GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], {strict_position:false}));
+}
+
+let shbs_btn = document.querySelector("#share_blur_strict");
+shbs_btn.onclick = function() {
+   output(GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], {blur:true}));
+}
+
+let shb_btn = document.querySelector("#share_blur");
+shb_btn.onclick = function() {
+   output(GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], {blur:true,strict_position:false}));
+}
+
+let shf_btn = document.querySelector("#share_flip");
+shf_btn.onclick = function() {
+   let msg = GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], {strict_position:false, flip:"x"});
+   msg += " / " + GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], {strict_position:false, flip:"y"});
+   output(msg);
+}
+
+let shr_btn = document.querySelector("#share_rotate");
+shr_btn.onclick = function() {
+   let msg = GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], {strict_position:false, rotate:1});
+   msg += " / " + GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1],{strict_position:false, rotate:2});
+   msg += " / " + GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1],{strict_position:false, rotate:3});
+   output(msg);
+}
+
+let shl_btn = document.querySelector("#share_loc");
+shl_btn.onclick = function() {
+   let msg = "top half : " + GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], {y_end:15});
+    msg += "<br>bottom half : " + GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], {y_start:16});
+    msg += "<br>left half : " + GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], {x_end:15});
+    msg += "<br>right half : " + GC.tileset_parser.share_patterns(selected_tiles[0], selected_tiles[1], {x_start:16});
+    output (msg);
 }

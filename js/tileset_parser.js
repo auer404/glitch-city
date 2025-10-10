@@ -3,7 +3,26 @@ GC.tileset_parser = {
     canvas: false,
     tileset_src: false,
 
+    preprocess_default_settings: {
+        flatten: false,
+        flip: false,
+        rotate: false,
+        x_start: false,
+        y_start: false,
+        x_end: false,
+        y_end: false,
+        resample_first: false
+    },
+
+    share_patterns_default_settings: {
+        definition: false,
+        strict_position: true,
+        blur: false
+    },
+
     init: function () {
+
+        this.share_patterns_default_settings.definition = GC.options.tile_size / 4;
 
         this.canvas = document.createElement("canvas");
         this.canvas.style.display = "none";
@@ -64,6 +83,7 @@ GC.tileset_parser = {
                 avg_brightness /= pixels.length;
 
                 tile.pixels = pixels;
+                tile.pixels_2d = GC.tools.array_2d(pixels);
                 tile.average_brightness = avg_brightness;
                 GC.tileset_map.tiles.push(tile);
 
@@ -121,164 +141,211 @@ GC.tileset_parser = {
         });
     },
 
-    same_pixels: function (tile_a, tile_b) {
+    preprocess_pixels: function (tile, options_obj = {}) {
 
-        for (let i = 0; i < tile_a.pixels.length; i++) {
-            let same_r = tile_a.pixels[i].r == tile_b.pixels[i].r;
-            let same_g = tile_a.pixels[i].g == tile_b.pixels[i].g;
-            let same_b = tile_a.pixels[i].b == tile_b.pixels[i].b;
-            if (!same_r || !same_g || !same_b) {
-                return false;
+        let options = { ...this.preprocess_default_settings, ...options_obj }
+
+        let resample = (options.x_start !== false || options.y_start !== false || options.x_end !== false || options.y_end !== false);
+        let resample_done = false;
+
+        let pixels_ready = tile.pixels_2d;
+
+        if (resample) {
+            options.x_start = options.x_start || 0;
+            options.y_start = options.y_start || 0;
+            options.x_end = options.x_end || pixels_ready[0].length;
+            options.y_end = options.y_end || pixels_ready.length;
+        }
+
+        if (resample && options.resample_first) {
+
+            pixels_ready = GC.tools.array_sample(
+                pixels_ready,
+                options.x_end - options.x_start,
+                options.y_end - options.y_start,
+                options.x_start,
+                options.y_start
+            );
+            resample = false;
+            resample_done = true;
+        }
+
+        if (options.flatten && !options.flip && !options.rotate && !resample) {
+            if (resample_done) {
+                pixels_ready = GC.tools.array_2d_flatten(pixels_ready);
+            } else {
+                pixels_ready = tile.pixels;
             }
         }
-        return true;
+
+        if (options.flip) { pixels_ready = GC.tools.array_flip(pixels_ready, options.flip); }
+        if (options.rotate) { pixels_ready = GC.tools.array_rotate(pixels_ready, options.rotate); }
+
+        if (resample) {
+            pixels_ready = GC.tools.array_sample(
+                pixels_ready,
+                options.x_end - options.x_start,
+                options.y_end - options.y_start,
+                options.x_start,
+                options.y_start
+            );
+        }
+
+        if (options.flatten && (options.flip || options.rotate || resample)) { pixels_ready = GC.tools.array_2d_flatten(pixels_ready); }
+
+        return pixels_ready;
     },
 
-    same_pixels_flipped: function (tile_a, tile_b, verbose = false) {
+    compare_pixels: function (pixels_a, pixels_b, mode = "flag diff") {
 
-        let pixels_a_2d = GC.tools.array_2d(tile_a.pixels);
+        let flattened = (pixels_a[0][0] === undefined);
 
-        let b_flipped_x = GC.tools.array_flip(GC.tools.array_2d(tile_b.pixels), "x");
-        let b_flipped_y = GC.tools.array_flip(GC.tools.array_2d(tile_b.pixels), "y");
-
-        let same_x = true, same_y = true;
-
-        for (let y = 0; y < GC.options.tile_size; y++) {
-            for (let x = 0; x < GC.options.tile_size; x++) {
-                let x_same_r = pixels_a_2d[y][x].r == b_flipped_x[y][x].r;
-                let x_same_g = pixels_a_2d[y][x].g == b_flipped_x[y][x].g;
-                let x_same_b = pixels_a_2d[y][x].b == b_flipped_x[y][x].b;
-                let y_same_r = pixels_a_2d[y][x].r == b_flipped_y[y][x].r;
-                let y_same_g = pixels_a_2d[y][x].g == b_flipped_y[y][x].g;
-                let y_same_b = pixels_a_2d[y][x].b == b_flipped_y[y][x].b;
-                if (!x_same_r || !x_same_g || !x_same_b) {
-                    same_x = false;
-                }
-                if (!y_same_r || !y_same_g || !y_same_b) {
-                    same_y = false;
-                }
-            }
-        }
-        if (!verbose) {
-            return same_x || same_y;
-        } else {
-            return { x: same_x, y: same_y }
-        }
-    },
-
-    same_pixels_rotated: function (tile_a, tile_b, verbose = false) {
-
-        let pixels_a_2d = GC.tools.array_2d(tile_a.pixels);
-        let pixels_b_2d = GC.tools.array_2d(tile_b.pixels);
-
-        let a_rotated = pixels_a_2d;
-
-        let count = 0;
-        let results = [];
-
-        while (count < 3) {
-
-            a_rotated = GC.tools.array_rotate(a_rotated);
-
-            let same = true;
-
-            for (let y = 0; y < GC.options.tile_size; y++) {
-                for (let x = 0; x < GC.options.tile_size; x++) {
-                    let same_r = a_rotated[y][x].r == pixels_b_2d[y][x].r;
-                    let same_g = a_rotated[y][x].g == pixels_b_2d[y][x].g;
-                    let same_b = a_rotated[y][x].b == pixels_b_2d[y][x].b;
-                    if (!same_r || !same_g || !same_b) {
-                        same = false;
-                    }
-                }
-            }
-            results.push(same);
-            count++;
-        }
-        if (!verbose) {
-            return results.includes(true);
-        } else {
-            return results.indexOf(true) + 1 || false;
-        }
-        
-    },
-
-    similarity: function (tile_a, tile_b) {
-
+        let diff_found = false;
         let similar_found = 0;
 
-        for (let i = 0; i < tile_a.pixels.length; i++) {
-            let same_r = tile_a.pixels[i].r == tile_b.pixels[i].r;
-            let same_g = tile_a.pixels[i].g == tile_b.pixels[i].g;
-            let same_b = tile_a.pixels[i].b == tile_b.pixels[i].b;
-            if (same_r && same_g && same_b) {
-                similar_found++;
-            }
+        let y_max = pixels_a.length;
+        let x_max;
+        if (flattened) {
+            x_max = 1;
+        } else {
+            x_max = pixels_a[0].length;
         }
-        return similar_found / tile_a.pixels.length;
+
+        for (let y = 0; y < y_max; y++) {
+            for (let x = 0; x < x_max; x++) {
+                let same_r, same_g, same_b;
+                if (flattened) {
+                    same_r = pixels_a[y].r == pixels_b[y].r;
+                    same_g = pixels_a[y].g == pixels_b[y].g;
+                    same_b = pixels_a[y].b == pixels_b[y].b;
+                } else {
+                    same_r = pixels_a[y][x].r == pixels_b[y][x].r;
+                    same_g = pixels_a[y][x].g == pixels_b[y][x].g;
+                    same_b = pixels_a[y][x].b == pixels_b[y][x].b;
+                }
+                if (!same_r || !same_g || !same_b) {
+                    diff_found = true;
+                    if (mode == "flag diff") { break; }
+                }
+                if (same_r && same_g && same_b) {
+                    similar_found++;
+                }
+            }
+            if (diff_found && mode == "flag diff") { break; }
+        }
+        if (mode == "flag diff") {
+            return !diff_found;
+        } else if (mode == "count similar") {
+            return similar_found;
+        }
     },
 
-    share_patterns: function (tile_a, tile_b, definition = GC.options.tile_size / 4, strict_position = false) {
+    compare_brightness: function (pixels_a, pixels_b) {
+        return this.get_average_brightness(pixels_a) == this.get_average_brightness(pixels_b);
+    },
 
-        let pixels_a_2d = GC.tools.array_2d(tile_a.pixels);
-        let pixels_b_2d = GC.tools.array_2d(tile_b.pixels);
+    get_average_brightness: function (pixel_arr) {
+
+        let flattened = (pixel_arr[0][0] === undefined);
+
+        let y_max = pixel_arr.length;
+        let x_max;
+        if (flattened) {
+            x_max = 1;
+        } else {
+            x_max = pixel_arr[0].length;
+        }
+
+        let brightness_sum = 0;
+
+        for (let y = 0; y < y_max; y++) {
+            for (let x = 0; x < x_max; x++) {
+
+                let pixel = pixel_arr[y];
+
+                if (!flattened) {
+                    pixel = pixel_arr[y][x];
+                }
+                brightness_sum += pixel.brightness;
+            }
+
+        }
+        return brightness_sum / y_max * x_max;
+    },
+
+    same_pixels: function (tile_a, tile_b, options_obj = {}) {
+
+        if (!options_obj.flatten) {
+            options_obj.flatten = true;
+        }
+
+        let minimal_options_obj = { ...options_obj, flip: false, rotate: false }
+
+        let pixels_a = this.preprocess_pixels(tile_a, minimal_options_obj);
+        let pixels_b = this.preprocess_pixels(tile_b, options_obj);
+
+        return this.compare_pixels(pixels_a, pixels_b);
+    },
+
+    similarity: function (tile_a, tile_b, options_obj = {}) {
+
+        if (!options_obj.flatten) {
+            options_obj.flatten = true;
+        }
+
+        let minimal_options_obj = { ...options_obj, flip: false, rotate: false }
+
+        let pixels_a = this.preprocess_pixels(tile_a, minimal_options_obj);
+        let pixels_b = this.preprocess_pixels(tile_b, options_obj);
+
+        return this.compare_pixels(pixels_a, pixels_b, "count similar") / pixels_a.length;
+    },
+
+    share_patterns: function (tile_a, tile_b, options_obj = {}) {
+
+        let options = { ...this.share_patterns_default_settings, ...options_obj };
+        let minimal_options_obj = { ...options, flip: false, rotate: false }
+
+        let pixels_a = this.preprocess_pixels(tile_a, minimal_options_obj);
+        let pixels_b = this.preprocess_pixels(tile_b, options_obj);
 
         let patterns_a = [];
         let patterns_b = [];
 
-        for (let y = 0; y <= GC.options.tile_size - definition; y += definition) {
-            for (let x = 0; x <= GC.options.tile_size - definition; x += definition) {
+        for (let y = 0; y <= pixels_a.length - options.definition; y += options.definition) {
+            for (let x = 0; x <= pixels_a[0].length - options.definition; x += options.definition) {
 
                 let is_distinct_a = true;
                 let new_pattern_a = GC.tools.array_2d_flatten(
-                    GC.tools.array_fragment(
-                    pixels_a_2d ,
-                    definition, definition,
-                    x, y
-                ));
+                    GC.tools.array_sample(
+                        pixels_a,
+                        options.definition, options.definition,
+                        x, y
+                    ));
 
                 let is_distinct_b = true;
                 let new_pattern_b = GC.tools.array_2d_flatten(
-                    GC.tools.array_fragment(
-                    pixels_b_2d ,
-                    definition, definition,
-                    x, y
-                ));
+                    GC.tools.array_sample(
+                        pixels_b,
+                        options.definition, options.definition,
+                        x, y
+                    ));
 
-                if (!strict_position) {
+                if (!options.strict_position) {
 
                     let a_already_exists = false;
 
                     for (let a_stored of patterns_a) {
-                        let a_same = true;
-                        for (let i = 0; i < new_pattern_a.length; i++) {
-                            let same_r = a_stored[i].r == new_pattern_a[i].r;
-                            let same_g = a_stored[i].g == new_pattern_a[i].g;
-                            let same_b = a_stored[i].b == new_pattern_a[i].b;
-                            if (!same_r || !same_g || !same_b) {
-                                a_same = false;
-                            }
-                        }
-                        if (a_same) {
+                        if (this.compare_pixels(a_stored, new_pattern_a)) {
                             a_already_exists = true;
                         }
                     }
                     is_distinct_a = !a_already_exists;
 
-
                     let b_already_exists = false;
 
                     for (let b_stored of patterns_b) {
-                        let b_same = true;
-                        for (let i = 0; i < new_pattern_b.length; i++) {
-                            let same_r = b_stored[i].r == new_pattern_b[i].r;
-                            let same_g = b_stored[i].g == new_pattern_b[i].g;
-                            let same_b = b_stored[i].b == new_pattern_b[i].b;
-                            if (!same_r || !same_g || !same_b) {
-                                b_same = false;
-                            }
-                        }
-                        if (b_same) {
+                        if (this.compare_pixels(b_stored, new_pattern_b)) {
                             b_already_exists = true;
                         }
                     }
@@ -298,42 +365,32 @@ GC.tileset_parser = {
         for (let a_i = 0; a_i < patterns_a.length; a_i++) {
 
             let comparison_depth = patterns_b.length;
-            if (strict_position) {
+            if (options.strict_position) {
                 comparison_depth = 1;
             }
 
             for (let b_i = 0; b_i < comparison_depth; b_i++) {
 
                 let tested_a = patterns_a[a_i];
-                let tested_b = patterns_b[b_i]; 
-                if (strict_position) {
-                    tested_b = patterns_b[a_i]; 
+                let tested_b = patterns_b[b_i];
+                if (options.strict_position) {
+                    tested_b = patterns_b[a_i];
                 }
 
-                let same = true;
-                for (let pixel_i = 0; pixel_i < tested_a.length; pixel_i++) {
-                    let same_r = tested_a[pixel_i].r == tested_b[pixel_i].r;
-                    let same_g = tested_a[pixel_i].g == tested_b[pixel_i].g;
-                    let same_b = tested_a[pixel_i].b == tested_b[pixel_i].b;
-                    if (!same_r || !same_g || !same_b) {
-                        same = false;
-                    }
-                }
-
-                if (same) {
+                if ((!options.blur && this.compare_pixels(tested_a, tested_b)) || (options.blur && this.compare_brightness(tested_a, tested_b))) {
                     amount++;
                 }
             }
         }
 
         let max = patterns_a.length;
-        if (!strict_position) {
+        if (!options.strict_position) {
             max = (patterns_a.length + patterns_b.length) / 2;
         }
 
         let ratio = amount / max;
 
-        return ratio;
+        return Math.min(ratio, 1);
     },
 
     tile_by_id: function (sorted_index) {
@@ -362,6 +419,9 @@ GC.tileset_map_get = function (sorted_index = false, gap_tolerance = 0) {
 }
 
 GC.tools.array_2d = function (arr) {
+
+    if (arr[0][0]) { return arr; }
+
     let dim = Math.sqrt(arr.length);
     let formatted = [];
     let src_i = 0;
@@ -376,6 +436,9 @@ GC.tools.array_2d = function (arr) {
 }
 
 GC.tools.array_2d_flatten = function (arr) {
+
+    if (!arr[0][0]) { return arr; }
+
     let flattened = [];
 
     for (let y = 0; y < arr.length; y++) {
@@ -388,7 +451,7 @@ GC.tools.array_2d_flatten = function (arr) {
 
 GC.tools.array_flip = function (arr, axis) {
 
-    if (axis == "y") {
+    if (axis == "y" || !arr[0][0]) {
         return arr.toReversed();
     } else if (axis == "x") {
         let flipped = [];
@@ -401,6 +464,8 @@ GC.tools.array_flip = function (arr, axis) {
 }
 
 GC.tools.array_rotate = function (arr, rotations = 1) {
+
+    if (!arr[0][0]) { return arr; }
 
     let rotations_count = 0;
 
@@ -426,12 +491,14 @@ GC.tools.array_rotate = function (arr, rotations = 1) {
     return base;
 }
 
-GC.tools.array_fragment = function(arr, w, h, offset_x = 0, offset_y = 0) {
+GC.tools.array_sample = function (arr, w, h, offset_x = 0, offset_y = 0) {
 
     let subset = [];
 
+    if (!arr[0][0]) { return subset; }
+
     for (let y = 0; y < h; y++) {
-        if (!subset[y]) {subset[y] = [];}
+        if (!subset[y]) { subset[y] = []; }
         for (let x = 0; x < w; x++) {
             let elem = (arr[y + offset_y] && arr[y + offset_y][x + offset_x]) ? arr[y + offset_y][x + offset_x] : null;
             subset[y][x] = elem;
